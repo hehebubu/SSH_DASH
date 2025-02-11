@@ -25,6 +25,6 @@ pip install -r requirements.txt
 
 3. 실행
 ```bash
-python main.py
+python new.py
 ```
 ```
