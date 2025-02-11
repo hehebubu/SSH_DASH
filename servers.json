@@ -1,0 +1,99 @@
+{
+    "credentials": {
+      "default_username": "sanghyeok",
+      "default_password": "1111"
+    },
+    "servers": [
+      {
+        "name": "Server1",
+        "ip": "10.201.135.94",
+        "gpu_count": 4,
+        "gpu_spec": "NVIDIA TITAN RTX",
+        "description": "4개의 NVIDIA TITAN RTX GPU가 장착된 서버"
+      },
+      {
+        "name": "Server2",
+        "ip": "10.201.135.109",
+        "gpu_count": 4,
+        "gpu_spec": "NVIDIA TITAN RTX",
+        "description": "4개의 NVIDIA TITAN RTX GPU가 장착된 서버"
+      },
+      {
+        "name": "Server3",
+        "ip": "10.201.135.116",
+        "gpu_count": 4,
+        "gpu_spec": "NVIDIA TITAN RTX",
+        "description": "4개의 NVIDIA TITAN RTX GPU가 장착된 서버"
+      },
+      {
+        "name": "Server4",
+        "ip": "10.201.135.110",
+        "gpu_count": 8,
+        "gpu_spec": "NVIDIA RTX A5000",
+        "description": "8개의 NVIDIA RTX A5000 GPU가 장착된 고성능 서버"
+      },
+      {
+        "name": "Server5",
+        "ip": "10.201.135.111",
+        "gpu_count": 6,
+        "gpu_spec": "NVIDIA RTX 3090",
+        "description": "6개의 NVIDIA RTX 3090 GPU가 장착된 서버"
+      },
+      {
+        "name": "Server6",
+        "ip": "10.201.135.112",
+        "gpu_count": 4,
+        "gpu_spec": "NVIDIA A100-PCIE-40GB",
+        "description": "4개의 NVIDIA A100 GPU가 장착된 고성능 서버"
+      },
+      {
+        "name": "Server7",
+        "ip": "10.201.135.113",
+        "gpu_count": 4,
+        "gpu_spec": "GeForce RTX 3090",
+        "description": "4개의 GeForce RTX 3090 GPU가 장착된 서버"
+      },
+      {
+        "name": "Server8",
+        "ip": "10.201.135.101",
+        "gpu_count": 3,
+        "gpu_spec": "GeForce RTX 3090",
+        "description": "3개의 GeForce RTX 3090 GPU가 장착된 서버"
+      },
+      {
+        "name": "Server9",
+        "ip": "10.201.135.102",
+        "gpu_count": 7,
+        "gpu_spec": "GeForce RTX 3090",
+        "description": "7개의 GeForce RTX 3090 GPU가 장착된 서버"
+      },
+      {
+        "name": "Server10",
+        "ip": "10.201.135.103",
+        "gpu_count": 8,
+        "gpu_spec": "GeForce RTX 3090",
+        "description": "8개의 GeForce RTX 3090 GPU가 장착된 서버"
+      },
+      {
+        "name": "Server11",
+        "ip": "10.201.135.104",
+        "gpu_count": 4,
+        "gpu_spec": "NVIDIA TITAN RTX",
+        "description": "4개의 NVIDIA TITAN RTX GPU가 장착된 서버"
+      },
+      {
+        "name": "Server12",
+        "ip": "115.145.175.104",
+        "gpu_count": 8,
+        "gpu_spec": "NVIDIA RTX A5000",
+        "description": "8개의 NVIDIA RTX A5000 GPU가 장착된 서버"
+      },
+      {
+        "name": "Server13",
+        "ip": "115.145.178.195",
+        "gpu_count": 4,
+        "gpu_spec": "NVIDIA RTX A5000",
+        "description": "4개의 NVIDIA RTX A5000 GPU가 장착된 서버"
+      }
+    ]
+  }
