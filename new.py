@@ -318,102 +318,6 @@ class SSHConnector:
             ),
         )
         
-
-    def update_gpu_status(self, server: Dict):
-        try:
-            # 로딩 중 메시지 표시
-            loading_content = ft.Column(
-                controls=[
-                    ft.Row(
-                        controls=[
-                            ft.Text("서버 정보 로딩 중...", size=20, weight=ft.FontWeight.BOLD),
-                            ft.Container(width=20),
-                            ft.Text("정보 업데이트 중입니다. 잠시만 기다려주세요.", size=14, color=ft.colors.GREY_600),
-                        ],
-                    ),
-                ],
-            )
-            self.gpu_status_container.content = loading_content
-            self.page.update()
-
-            # SSH 연결
-            ssh = paramiko.SSHClient()
-            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            
-            username = self.username_field.value or self.config["credentials"]["default_username"]
-            password = self.password_field.value or self.config["credentials"]["default_password"]
-            
-            try:
-                ssh.connect(server["ip"], username=username, key_filename=os.path.expanduser('~/.ssh/id_rsa'))
-            except Exception:
-                ssh.connect(server["ip"], username=username, password=password)
-
-            # 사용자 정보 얻기
-            stdin, stdout, stderr = ssh.exec_command('w -h')  # -h 옵션은 헤더를 제외
-            users_output = stdout.read().decode()
-            
-            # GPU 정보 얻기
-            stdin, stdout, stderr = ssh.exec_command('nvidia-smi')
-            gpu_output = stdout.read().decode()
-
-            # 출력 포맷팅
-            formatted_gpu = self.format_gpu_info(gpu_output)
-            formatted_users = self.format_user_info(users_output)
-
-            # 상태 정보 업데이트
-            status_content = ft.Column(
-                controls=[
-                    ft.Row(
-                        controls=[
-                            ft.Text(f"{server['name']} 상태", size=20, weight=ft.FontWeight.BOLD),
-                            ft.Container(width=20),
-                            ft.Text(f"마지막 업데이트: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", 
-                                size=14, color=ft.colors.GREY_600),
-                        ],
-                    ),
-                    ft.Divider(height=1, color=ft.colors.GREY_300),
-                    # 사용자 정보 표시
-                    ft.Container(
-                        content=ft.Column([
-                            ft.Text("현재 접속 중인 사용자", size=16, weight=ft.FontWeight.BOLD),
-                            ft.Container(
-                                content=ft.Text(formatted_users, 
-                                            size=14, 
-                                            font_family="Consolas",
-                                            selectable=True),
-                                bgcolor=ft.colors.GREY_50,
-                                padding=10,
-                                border_radius=5,
-                            ),
-                        ]),
-                        margin=ft.margin.only(bottom=20),
-                    ),
-                    # GPU 정보 표시
-                    ft.Container(
-                        content=ft.Column([
-                            ft.Text("GPU 상태", size=16, weight=ft.FontWeight.BOLD),
-                            ft.Container(
-                                content=ft.Text(formatted_gpu, 
-                                            size=14, 
-                                            font_family="Consolas",
-                                            selectable=True),
-                                bgcolor=ft.colors.GREY_50,
-                                padding=10,
-                                border_radius=5,
-                            ),
-                        ]),
-                    ),
-                ],
-                scroll=ft.ScrollMode.AUTO,
-            )
-
-            self.gpu_status_container.content = status_content
-            self.page.update()
-
-            ssh.close()
-            
-        except Exception as e:
-            self.show_error(f"상태 확인 실패: {str(e)}")
             
     def format_user_info(self, output: str) -> str:
         """사용자 정보를 포맷팅"""
@@ -457,82 +361,392 @@ class SSHConnector:
                 formatted_output.append(formatted_line)
         
         formatted_output.append(border)
-        return '\n'.join(formatted_output)        
-
-    def format_gpu_info(self, output: str) -> str:
+        return '\n'.join(formatted_output)   
+    
+    
+    def format_gpu_info(self, output: str, ssh_client: paramiko.SSHClient) -> str:
         """nvidia-smi 출력을 파싱하여 정돈된 형식으로 변환"""
-        lines = output.split('\n')
-        
-        # GPU 개수 카운트
-        gpu_count = sum(1 for line in lines if 'NVIDIA' in line and 'On' in line)
-        
-        # 프로세스 정보 파싱
-        processes = []
-        is_process_section = False
-        
-        for line in lines:
-            if 'Processes' in line:
-                is_process_section = True
-                continue
-                
-            if is_process_section and line.strip():
-                if 'GPU   GI   CI' in line or '=' in line or not line.strip('| '):
-                    continue
-                    
-                content = line.strip('| \n')
-                if content:
-                    parts = ' '.join(content.split()).split()
-                    
-                    if len(parts) >= 7:
-                        process = {
-                            'gpu': parts[0],
-                            'pid': parts[3],
-                            'type': parts[4],
-                            'name': parts[5],
-                            'memory': parts[-1]
-                        }
-                        processes.append(process)
-        
-        # 테이블 너비 설정
-        table_width = 75
-        gpu_width = 4
-        pid_width = 8
-        type_width = 6
-        memory_width = 12
-        name_width = table_width - gpu_width - pid_width - type_width - memory_width - 9  # 구분자 여백 고려
-        
-        # 포맷된 출력 생성
-        border = "+" + "-" * table_width + "+"
-        formatted_output = [
-            border,
-            f"| 총 GPU 수: {gpu_count}{' ' * (table_width - len(str(gpu_count)) - 10)}|",
-            border,
-            "| GPU 프로세스 정보:",
-            "+" + "=" * table_width + "+",
-            f"| {'GPU':^{gpu_width}} | {'PID':^{pid_width}} | {'Type':^{type_width}} | {'Process Name':^{name_width}} | {'Memory':^{memory_width}} |",
-            border
-        ]
-        
-        # 프로세스 정보 추가
-        for proc in processes:
-            name = proc['name']
-            if len(name) > name_width:
-                name = "..." + name[-(name_width-3):]  # 긴 이름은 뒷부분만 표시
+        try:
+            lines = output.split('\n')
+            gpus = []
+            in_process_section = False
             
-            line = (f"| {proc['gpu']:^{gpu_width}} "
-                    f"| {proc['pid']:^{pid_width}} "
-                    f"| {proc['type']:^{type_width}} "
-                    f"| {name:<{name_width}} "
-                    f"| {proc['memory']:>{memory_width}} |")
-            formatted_output.append(line)
-        
-        if not processes:
-            empty_msg = "실행 중인 프로세스 없음"
-            formatted_output.append(f"| {empty_msg:^{table_width}} |")
-        
-        formatted_output.append(border)
-        return '\n'.join(formatted_output)
+            # GPU 기본 정보 파싱
+            for i, line in enumerate(lines):
+                if '|   ' in line and 'NVIDIA' in line:
+                    try:
+                        parts = [p.strip() for p in line.split('|')]
+                        gpu_info = parts[1].strip().split()
+                        gpu_id = gpu_info[0]
+                        
+                        # 다음 줄의 성능 정보
+                        next_line = lines[i + 1]
+                        perf_parts = [p.strip() for p in next_line.split('|')]
+                        
+                        # 온도, 전력 정보
+                        temp_parts = perf_parts[1].split()
+                        temp = temp_parts[1].replace('C', '')
+                        power = temp_parts[4] if len(temp_parts) > 4 else 'N/A'
+                        
+                        # 메모리, 사용률 정보
+                        util_parts = perf_parts[2].split()
+                        memory_used = util_parts[0]
+                        memory_total = util_parts[2]
+                        utilization = util_parts[-2] if len(util_parts) > 2 else 'N/A'
+                        
+                        gpu = {
+                            'id': gpu_id,
+                            'name': 'TITAN RTX',
+                            'temp': temp,
+                            'power': power,
+                            'memory_used': memory_used,
+                            'memory_total': memory_total,
+                            'utilization': utilization,
+                            'processes': []
+                        }
+                        gpus.append(gpu)
+                        
+                    except Exception as e:
+                        print(f"GPU 정보 파싱 오류: {str(e)}")
+                        continue
 
+            # 프로세스 정보 파싱
+            process_lines = []
+            for i, line in enumerate(lines):
+                if '| Processes:' in line:
+                    in_process_section = True
+                    continue
+                if in_process_section and line.strip().startswith('|'):
+                    if 'GPU   GI   CI' in line or '=' in line:
+                        continue
+                    if line.strip() != '|':
+                        process_lines.append(line)
+
+            # 프로세스 정보 처리
+            for line in process_lines:
+                try:
+                    parts = line.strip().split('|')
+                    if len(parts) < 2:
+                        continue
+                    
+                    process_parts = parts[1].strip().split()
+                    if len(process_parts) >= 5:  # GPU ID, PID, Type, Process name, Memory 정보가 있는지 확인
+                        gpu_id = process_parts[0]
+                        pid = process_parts[3]
+                        memory = process_parts[-1]
+                        
+                        # ps 명령어로 상세 정보 얻기
+                        try:
+                            stdin, stdout, stderr = ssh_client.exec_command(f'ps -f {pid}')
+                            ps_output = stdout.read().decode()
+                            ps_lines = ps_output.strip().split('\n')
+                            
+                            if len(ps_lines) > 1:  # 헤더 제외
+                                ps_info = ps_lines[1].split()
+                                username = ps_info[0]
+                                start_time = ps_info[4]
+                                command = ' '.join(ps_info[7:])
+                                
+                                # GPU에 프로세스 정보 추가
+                                for gpu in gpus:
+                                    if gpu['id'] == gpu_id:
+                                        gpu['processes'].append({
+                                            'pid': pid,
+                                            'memory': memory,
+                                            'user': username,
+                                            'start_time': start_time,
+                                            'command': command
+                                        })
+                        except Exception as e:
+                            print(f"프로세스 상세 정보 조회 실패 (PID: {pid}): {str(e)}")
+                            continue
+                            
+                except Exception as e:
+                    print(f"프로세스 라인 파싱 오류: {str(e)}")
+                    continue
+
+            # 결과 포맷팅
+            result = []
+            header = f"+{'-' * 100}+"
+            result.append(header)
+            result.append(f"| {'GPU 상태 정보':^98} |")
+            result.append(header)
+            
+            for gpu in gpus:
+                # GPU 기본 정보
+                result.append(f"| GPU {gpu['id']} | {gpu['name']} |")
+                result.append(
+                    f"| 온도: {gpu['temp']}°C | "
+                    f"전력: {gpu['power']} | "
+                    f"메모리: {gpu['memory_used']}/{gpu['memory_total']} | "
+                    f"사용률: {gpu['utilization']} |"
+                )
+                result.append(f"|{'-' * 98}|")
+                
+                # 프로세스 정보
+                if gpu['processes']:
+                    result.append(f"| {'사용자':^15} | {'PID':^8} | {'시작시간':^10} | {'메모리':^12} | {'명령어':^45} |")
+                    result.append(f"|{'-' * 98}|")
+                    for proc in gpu['processes']:
+                        command = proc['command']
+                        if len(command) > 45:
+                            command = command[:42] + "..."
+                        result.append(
+                            f"| {proc['user']:<15} | {proc['pid']:^8} | {proc['start_time']:^10} | "
+                            f"{proc['memory']:>12} | {command:<45} |"
+                        )
+                else:
+                    result.append(f"| {'현재 실행 중인 프로세스 없음':^98} |")
+                result.append(header)
+            
+            return '\n'.join(result)
+            
+        except Exception as e:
+            return f"GPU 정보 파싱 중 오류 발생: {str(e)}\n원본 출력:\n{output}"
+
+    def update_gpu_status(self, server: Dict):
+        try:
+            # 로딩 중 메시지 표시
+            loading_content = ft.Column(
+                controls=[
+                    ft.Text("서버 정보 로딩 중...", size=20, weight=ft.FontWeight.BOLD),
+                    ft.Text("정보 업데이트 중입니다. 잠시만 기다려주세요.", 
+                        size=14, color=ft.colors.GREY_600),
+                ],
+            )
+            self.gpu_status_container.content = loading_content
+            self.page.update()
+
+            # SSH 연결 및 GPU 정보 얻기
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            
+            username = self.username_field.value or self.config["credentials"]["default_username"]
+            password = self.password_field.value or self.config["credentials"]["default_password"]
+            
+            try:
+                ssh.connect(server["ip"], username=username, key_filename=os.path.expanduser('~/.ssh/id_rsa'))
+            except Exception:
+                ssh.connect(server["ip"], username=username, password=password)
+
+            stdin, stdout, stderr = ssh.exec_command('nvidia-smi')
+            gpu_output = stdout.read().decode()
+
+            # GPU 정보 파싱
+            gpus = self.parse_gpu_info(gpu_output, ssh)
+
+            # UI 구성
+            content_column = ft.Column(
+                controls=[
+                    ft.Row(
+                        controls=[
+                            ft.Text(f"{server['name']} 상태", size=20, weight=ft.FontWeight.BOLD),
+                            ft.Container(width=20),
+                            ft.Text(f"마지막 업데이트: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", 
+                                size=14, color=ft.colors.GREY_600),
+                        ],
+                    ),
+                    ft.Divider(height=1, color=ft.colors.GREY_300),
+                ],
+                scroll=ft.ScrollMode.AUTO,
+                spacing=20,
+            )
+
+            # 각 GPU별 정보 표시
+            for gpu in gpus:
+                # GPU 기본 정보
+                gpu_info = ft.Container(
+                    content=ft.Column([
+                        ft.Row([
+                            ft.Icon(
+                                ft.icons.MEMORY,
+                                color=self.get_temperature_color(float(gpu['temp'])),
+                                size=24
+                            ),
+                            ft.Text(
+                                f"GPU {gpu['id']} | {gpu['name']}", 
+                                size=16, 
+                                weight=ft.FontWeight.BOLD
+                            ),
+                        ]),
+                        ft.Text(
+                            f"온도: {gpu['temp']}°C | 전력: {gpu['power']} | "
+                            f"메모리: {gpu['memory_used']}/{gpu['memory_total']} | "
+                            f"사용률: {gpu['utilization']}"
+                        ),
+                    ]),
+                    padding=10,
+                    bgcolor=ft.colors.BLUE_50,
+                    border_radius=10,
+                )
+                
+                # 프로세스 정보 테이블
+                process_table = None
+                if gpu['processes']:
+                    process_table = ft.DataTable(
+                        columns=[
+                            ft.DataColumn(ft.Text("사용자")),
+                            ft.DataColumn(ft.Text("PID")),
+                            ft.DataColumn(ft.Text("시작 시간")),
+                            ft.DataColumn(ft.Text("메모리")),
+                            ft.DataColumn(ft.Text("명령어")),
+                        ],
+                        rows=[
+                            ft.DataRow(
+                                cells=[
+                                    ft.DataCell(ft.Text(proc['user'])),
+                                    ft.DataCell(ft.Text(proc['pid'])),
+                                    ft.DataCell(ft.Text(proc['start_time'])),
+                                    ft.DataCell(ft.Text(proc['memory'])),
+                                    ft.DataCell(ft.Text(
+                                        proc['command'][:45] + "..." if len(proc['command']) > 45 else proc['command']
+                                    )),
+                                ],
+                            )
+                            for proc in gpu['processes']
+                        ],
+                    )
+                else:
+                    process_table = ft.Container(
+                        content=ft.Text(
+                            "실행 중인 프로세스 없음",
+                            color=ft.colors.GREY_600,
+                            italic=True,
+                            size=14,
+                        ),
+                        padding=10,
+                    )
+
+                # GPU 카드 생성
+                gpu_card = ft.Card(
+                    content=ft.Container(
+                        content=ft.Column([
+                            gpu_info,
+                            ft.Divider(height=1, color=ft.colors.GREY_300),
+                            process_table,
+                        ]),
+                        padding=10,
+                    ),
+                )
+                content_column.controls.append(gpu_card)
+
+            self.gpu_status_container.content = content_column
+            self.page.update()
+
+            ssh.close()
+            
+        except Exception as e:
+            self.show_error(f"상태 확인 실패: {str(e)}")
+            if 'ssh' in locals():
+                ssh.close()
+
+    def get_temperature_color(self, temp: float) -> str:
+        """GPU 온도에 따른 색상 반환"""
+        if temp >= 80:
+            return ft.colors.RED
+        elif temp >= 70:
+            return ft.colors.ORANGE
+        elif temp >= 60:
+            return ft.colors.YELLOW
+        else:
+            return ft.colors.GREEN
+
+    def parse_gpu_info(self, output: str, ssh_client: paramiko.SSHClient) -> list:
+        """nvidia-smi 출력을 파싱하여 GPU 정보 반환"""
+        lines = output.split('\n')
+        gpus = []
+        in_process_section = False
+        
+        # GPU 기본 정보 파싱
+        for i, line in enumerate(lines):
+            if '|   ' in line and 'NVIDIA' in line:
+                try:
+                    parts = [p.strip() for p in line.split('|')]
+                    gpu_info = parts[1].strip().split()
+                    gpu_id = gpu_info[0]
+                    
+                    next_line = lines[i + 1]
+                    perf_parts = [p.strip() for p in next_line.split('|')]
+                    
+                    temp_parts = perf_parts[1].split()
+                    temp = temp_parts[1].replace('C', '')
+                    power = temp_parts[4] if len(temp_parts) > 4 else 'N/A'
+                    
+                    util_parts = perf_parts[2].split()
+                    memory_used = util_parts[0]
+                    memory_total = util_parts[2]
+                    utilization = util_parts[-2] if len(util_parts) > 2 else 'N/A'
+                    
+                    gpu = {
+                        'id': gpu_id,
+                        'name': 'TITAN RTX',
+                        'temp': temp,
+                        'power': power,
+                        'memory_used': memory_used,
+                        'memory_total': memory_total,
+                        'utilization': utilization,
+                        'processes': []
+                    }
+                    gpus.append(gpu)
+                    
+                except Exception as e:
+                    print(f"GPU 정보 파싱 오류: {str(e)}")
+                    continue
+
+        # 프로세스 정보 파싱
+        process_lines = []
+        for i, line in enumerate(lines):
+            if '| Processes:' in line:
+                in_process_section = True
+                continue
+            if in_process_section and line.strip().startswith('|'):
+                if 'GPU   GI   CI' in line or '=' in line:
+                    continue
+                if line.strip() != '|':
+                    process_lines.append(line)
+
+        # 프로세스 정보 처리
+        for line in process_lines:
+            try:
+                parts = line.strip().split('|')
+                if len(parts) < 2:
+                    continue
+                
+                process_parts = parts[1].strip().split()
+                if len(process_parts) >= 5:
+                    gpu_id = process_parts[0]
+                    pid = process_parts[3]
+                    memory = process_parts[-1]
+                    
+                    try:
+                        stdin, stdout, stderr = ssh_client.exec_command(f'ps -f {pid}')
+                        ps_output = stdout.read().decode()
+                        ps_lines = ps_output.strip().split('\n')
+                        
+                        if len(ps_lines) > 1:
+                            ps_info = ps_lines[1].split()
+                            username = ps_info[0]
+                            start_time = ps_info[4]
+                            command = ' '.join(ps_info[7:])
+                            
+                            for gpu in gpus:
+                                if gpu['id'] == gpu_id:
+                                    gpu['processes'].append({
+                                        'pid': pid,
+                                        'memory': memory,
+                                        'user': username,
+                                        'start_time': start_time,
+                                        'command': command
+                                    })
+                    except Exception as e:
+                        print(f"프로세스 상세 정보 조회 실패 (PID: {pid}): {str(e)}")
+                        continue
+                        
+            except Exception as e:
+                print(f"프로세스 라인 파싱 오류: {str(e)}")
+                continue
+        
+        return gpus
 
     def highlight_process_info(self, output: str) -> str:
         # 프로세스 정보에 빨간색 하이라이트 추가
