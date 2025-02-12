@@ -240,20 +240,21 @@ class SSHConnector:
         # Credentials Section
         self.username_field = ft.TextField(
             label="Username",
-            prefix_icon=ft.icons.PERSON,
+            prefix_icon=ft.Icons.PERSON,  # icons -> Icons로 변경
             border_radius=10,
             value=self.config["credentials"]["default_username"],
             width=250,
         )
         self.password_field = ft.TextField(
             label="Password",
-            prefix_icon=ft.icons.LOCK,
+            prefix_icon=ft.Icons.LOCK,    # icons -> Icons로 변경
             password=True,
             can_reveal_password=True,
             border_radius=10,
             value=self.config["credentials"]["default_password"],
             width=250,
         )
+
 
         credentials_column = ft.Column(
             controls=[
@@ -812,22 +813,22 @@ class SSHConnector:
             self.show_error(f"연결 실패: {str(e)}")
 
     def show_error(self, message: str):
-        self.page.show_snack_bar(
-            ft.SnackBar(
-                content=ft.Text(message),
-                bgcolor=ft.colors.RED_400,
-                action="확인"
-            )
+        self.page.snack_bar = ft.SnackBar(  # show_snack_bar -> snack_bar로 변경
+            content=ft.Text(message),
+            bgcolor=ft.Colors.RED_400,
+            action="확인"
         )
+        self.page.snack_bar.open = True
+        self.page.update()
 
     def show_snackbar(self, message: str, color="blue"):
-        self.page.show_snack_bar(
-            ft.SnackBar(
-                content=ft.Text(message),
-                bgcolor=ft.colors.BLUE_400 if color == "blue" else ft.colors.GREEN_400,
-                action="확인"
-            )
+        self.page.snack_bar = ft.SnackBar(  # show_snack_bar -> snack_bar로 변경
+            content=ft.Text(message),
+            bgcolor=ft.Colors.BLUE_400 if color == "blue" else ft.Colors.GREEN_400,
+            action="확인"
         )
+        self.page.snack_bar.open = True
+        self.page.update()
 
 def main(page: ft.Page):
     SSHConnector(page)
