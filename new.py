@@ -11,7 +11,7 @@ class SSHConnector:
         self.page = page
         self.config = self.load_config()
         self.setup_page()
-        self.setup_icons()  # 아이콘 설정 추가
+        self.setup_icons()  # Set up icons
         self.create_ui()
 
     def load_config(self) -> Dict:
@@ -19,52 +19,52 @@ class SSHConnector:
             with open('servers.json', 'r', encoding='utf-8') as f:
                 return json.load(f)
         except FileNotFoundError:
-            self.show_error("servers.json 파일을 찾을 수 없습니다.")
+            self.show_error("servers.json file not found.")
             return {"credentials": {"default_username": "", "default_password": ""}, "servers": []}
-        
-        
+
+
     def setup_icons(self):
-        """아이콘 관련 deprecated 경고 수정을 위한 메서드"""
+        """Method to set up icons for deprecated warning fix"""
         self.person_icon = ft.Icons.PERSON
         self.lock_icon = ft.Icons.LOCK
-        
-    def create_ui(self):
-        # 왼쪽 패널 (서버 목록)
-        left_panel = self.create_left_panel()
-        
 
-        # 상단 버튼 패널 추가
+    def create_ui(self):
+        # Left panel (server list)
+        left_panel = self.create_left_panel()
+
+
+        # Top button panel added
         top_panel = ft.Row(
             controls=[
                 ft.ElevatedButton(
-                    "모든 GPU 상태 확인",
+                    "Check All GPU Status",
                     color=ft.Colors.WHITE,
                     bgcolor=ft.Colors.BLUE,
                     on_click=self.handle_check_all_gpu_status,
                 ),
                 ft.ElevatedButton(
-                    "Linux 사용 매뉴얼",
+                    "Linux Manual",
                     color=ft.Colors.WHITE,
                     bgcolor=ft.Colors.GREEN,
                     on_click=self.handle_open_manual,
                 ),
                 ft.ElevatedButton(
-                    "장기사용 신청",
+                    "Long-term Application",
                     color=ft.Colors.WHITE,
                     bgcolor=ft.Colors.ORANGE,
                     on_click=self.handle_open_longterm,
                 ),
             ],
             alignment=ft.MainAxisAlignment.END,
-            spacing=10,  # 버튼 사이 간격
+            spacing=10,  # Spacing between buttons
         )
-        
-        # 오른쪽 패널 (GPU 상태)
+
+        # Right panel (GPU status)
         self.gpu_status_container = ft.Container(
             content=ft.Column(
                 controls=[
-                    ft.Text("GPU 상태", size=20, weight=ft.FontWeight.BOLD),
-                    ft.Text("서버를 선택하여 GPU 상태를 확인하세요", 
+                    ft.Text("GPU Status", size=20, weight=ft.FontWeight.BOLD),
+                    ft.Text("Select a server to check GPU status.",
                         size=14, color=ft.Colors.GREY_600),
                 ],
                 scroll=ft.ScrollMode.AUTO,
@@ -77,7 +77,7 @@ class SSHConnector:
             expand=True,
         )
 
-        # 전체 레이아웃
+        # Overall layout
         main_layout = ft.Column(
             controls=[
                 top_panel,
@@ -95,23 +95,23 @@ class SSHConnector:
 
         self.page.add(main_layout)
         self.page.update()
-        
-        
+
+
     def handle_check_all_gpu_status(self, e):
-        """GPU 현황 확인 버튼 핸들러 - 웹사이트로 리다이렉션"""
+        """GPU Status Check Button Handler - Redirect to website"""
         import webbrowser
         webbrowser.open('http://10.201.135.113:8890')
 
     def handle_open_manual(self, e):
-        """Linux 사용 매뉴얼 버튼 핸들러"""
+        """Linux Manual Button Handler"""
         import webbrowser
         webbrowser.open('https://dashlab-manual.netlify.app')
 
     def handle_open_longterm(self, e):
-        """장기사용 신청 엑셀 링크 버튼 핸들러"""
+        """Long-term Application Excel Link Button Handler"""
         import webbrowser
         webbrowser.open('https://o365skku.sharepoint.com/:x:/s/DASHLab/ES3hyEE2yDxIu4Ch3uvCuM8BcfJu9or5Qokdp5jU4FFHBA?e=CenLjo')
-        
+
     def setup_page(self):
         self.page.title = "SSH Server Connector"
         self.page.window.width = 1400
@@ -119,21 +119,21 @@ class SSHConnector:
         self.page.padding = 20
         self.page.theme_mode = ft.ThemeMode.LIGHT
         self.page.theme = ft.Theme(color_scheme_seed="blue")
-        
-        
+
+
     async def check_all_gpu_status(self):
         try:
             total_servers = len(self.config["servers"])
             current_server = 0
-            
-            # 프로그레스 표시 UI 생성
+
+            # UI to display progress
             progress_bar = ft.ProgressBar(width=400, value=0)
-            progress_text = ft.Text("서버 연결 준비 중...", size=14, color=ft.colors.GREY_600)
+            progress_text = ft.Text("Preparing to connect to servers...", size=14, color=ft.colors.GREY_600)
             server_status_text = ft.Text("", size=14, color=ft.colors.GREY_600)
-            
+
             loading_content = ft.Column(
                 controls=[
-                    ft.Text("모든 GPU 상태 로딩 중...", size=20, weight=ft.FontWeight.BOLD),
+                    ft.Text("Loading All GPU Status...", size=20, weight=ft.FontWeight.BOLD),
                     ft.Container(height=20),
                     progress_bar,
                     ft.Container(height=10),
@@ -145,81 +145,81 @@ class SSHConnector:
             self.gpu_status_container.content = loading_content
             self.page.update()
 
-            # 모든 서버의 상태 정보를 저장할 리스트
+            # List to store status information of all servers
             all_status = []
 
-            # 각 서버에 대해 상태 확인
+            # Check status for each server
             for server in self.config["servers"]:
                 current_server += 1
                 progress = current_server / total_servers
-                
-                # 프로그레스 업데이트
+
+                # Update progress
                 progress_bar.value = progress
-                progress_text.value = f"진행 상황: {current_server}/{total_servers} ({int(progress * 100)}%)"
-                server_status_text.value = f"현재 서버: {server['name']} ({server['ip']})"
+                progress_text.value = f"Progress: {current_server}/{total_servers} ({int(progress * 100)}%)"
+                server_status_text.value = f"Current Server: {server['name']} ({server['ip']})"
                 self.page.update()
 
                 try:
                     ssh = paramiko.SSHClient()
                     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                    
+
                     username = self.username_field.value or self.config["credentials"]["default_username"]
                     password = self.password_field.value or self.config["credentials"]["default_password"]
-                    
-                    server_status_text.value = f"'{server['name']}' 연결 중..."
+
+                    server_status_text.value = f"Connecting to '{server['name']}'..."
                     self.page.update()
-                    
+
                     try:
                         ssh_key_path = os.path.expanduser('~/.ssh/id_rsa')
                         ssh.connect(server["ip"], username=username, key_filename=ssh_key_path)
                     except Exception:
                         ssh.connect(server["ip"], username=username, password=password)
 
-                    server_status_text.value = f"'{server['name']}' GPU 정보 수집 중..."
+                    server_status_text.value = f"Collecting GPU information from '{server['name']}'..."
                     self.page.update()
-                    
+
                     stdin, stdout, stderr = ssh.exec_command('nvidia-smi')
                     output = stdout.read().decode()
-                    
+
                     all_status.append({
                         "server_name": server["name"],
-                        "status": self.format_gpu_info(output)
+                        "status": self.format_gpu_info(output, ssh) # Pass ssh client for process info
                     })
-                    
+
                     ssh.close()
-                    
+
                 except Exception as e:
                     all_status.append({
                         "server_name": server["name"],
-                        "status": f"연결 실패: {str(e)}"
+                        "status": f"Connection Failed: {str(e)}"
                     })
 
-            # 프로그레스 완료 표시
-            progress_text.value = "모든 서버 정보 수집 완료!"
-            server_status_text.value = "결과 생성 중..."
+            # Display progress completion
+            progress_text.value = "All server information collected!"
+            server_status_text.value = "Generating results..."
             self.page.update()
 
-            # 전체 상태 정보를 하나의 문자열로 결합
+            # Combine all status information into a single string
             combined_status = "\n\n".join([
                 f"=== {status['server_name']} ===\n{status['status']}"
                 for status in all_status
             ])
 
-            # 최종 UI 업데이트
+            # Final UI update
             status_content = ft.Column(
                 controls=[
                     ft.Row(
                         controls=[
-                            ft.Text("전체 GPU 상태", size=20, weight=ft.FontWeight.BOLD),
+                            ft.Text("Overall GPU Status", size=20, weight=ft.FontWeight.BOLD),
                             ft.Container(width=20),
-                            ft.Text(f"마지막 업데이트: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", 
+                            ft.Text(f"Last Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
                                 size=14, color=ft.colors.GREY_600),
                         ],
                     ),
                     ft.Divider(height=1, color=ft.colors.GREY_300),
                     ft.Container(
-                        content=ft.Text(combined_status, 
-                                    size=14, 
+                        content=ft.Text(combined_status,
+                                    size=14,
                                     font_family="Consolas",
                                     selectable=True),
                         bgcolor=ft.colors.GREY_50,
@@ -234,20 +234,22 @@ class SSHConnector:
             self.page.update()
 
         except Exception as e:
-            self.show_error(f"GPU 상태 확인 실패: {str(e)}")
+            self.show_error(f"Failed to check GPU status: {str(e)}")
+
+
 
     def create_left_panel(self):
         # Credentials Section
         self.username_field = ft.TextField(
             label="Username",
-            prefix_icon=ft.Icons.PERSON,  # icons -> Icons로 변경
+            prefix_icon=ft.Icons.PERSON,
             border_radius=10,
             value=self.config["credentials"]["default_username"],
             width=250,
         )
         self.password_field = ft.TextField(
             label="Password",
-            prefix_icon=ft.Icons.LOCK,    # icons -> Icons로 변경
+            prefix_icon=ft.Icons.LOCK,
             password=True,
             can_reveal_password=True,
             border_radius=10,
@@ -265,7 +267,7 @@ class SSHConnector:
             spacing=20,
         )
 
-        # 서버 목록
+        # Server List
         server_list = ft.Column(
             controls=[self.create_server_card(server) for server in self.config["servers"]],
             scroll=ft.ScrollMode.AUTO,
@@ -277,7 +279,7 @@ class SSHConnector:
                 controls=[
                     credentials_column,
                     ft.Divider(height=1, color=ft.colors.GREY_300),
-                    ft.Text("서버 목록", size=16, weight=ft.FontWeight.BOLD),
+                    ft.Text("Server List", size=16, weight=ft.FontWeight.BOLD),
                     server_list,
                 ],
                 scroll=ft.ScrollMode.AUTO,
@@ -294,18 +296,18 @@ class SSHConnector:
                     controls=[
                         ft.Text(server["name"], size=16, weight=ft.FontWeight.BOLD),
                         ft.Text(f"IP: {server['ip']}", size=14, color=ft.Colors.GREY_700),
-                        ft.Text(f"GPU: {server['gpu_count']}x {server['gpu_spec']}", 
+                        ft.Text(f"GPU: {server['gpu_count']}x {server['gpu_spec']}",
                                size=14, color=ft.Colors.GREY_700),
                         ft.Row(
                             controls=[
                                 ft.ElevatedButton(
-                                    "연결",
+                                    "Connect",
                                     color=ft.Colors.WHITE,
                                     bgcolor=ft.Colors.BLUE,
                                     on_click=lambda e, s=server: self.connect_to_server(s),
                                 ),
                                 ft.ElevatedButton(
-                                    "GPU 상태",
+                                    "GPU Status",
                                     color=ft.Colors.WHITE,
                                     bgcolor=ft.Colors.GREEN,
                                     on_click=lambda e, s=server: self.update_gpu_status(s),
@@ -318,38 +320,38 @@ class SSHConnector:
                 padding=20,
             ),
         )
-        
-            
+
+
     def format_user_info(self, output: str) -> str:
-        """사용자 정보를 포맷팅"""
+        """Formats user information"""
         if not output.strip():
-            return "현재 접속 중인 사용자가 없습니다."
-            
+            return "No users currently logged in."
+
         lines = output.strip().split('\n')
-        
-        # 테이블 설정
+
+        # Table settings
         table_width = 75
         user_width = 15
         tty_width = 10
         from_width = 20
         login_width = 15
-        what_width = table_width - user_width - tty_width - from_width - login_width - 9  # 구분자 여백
-        
-        # 테이블 생성
+        what_width = table_width - user_width - tty_width - from_width - login_width - 9  # Separator margins
+
+        # Table creation
         border = "+" + "-" * table_width + "+"
-        header = f"| {'사용자':^{user_width}} | {'TTY':^{tty_width}} | {'접속위치':^{from_width}} | {'로그인시간':^{login_width}} | {'작업':^{what_width}} |"
-        
+        header = f"| {'User':^{user_width}} | {'TTY':^{tty_width}} | {'From':^{from_width}} | {'Login Time':^{login_width}} | {'What':^{what_width}} |"
+
         formatted_output = [
             border,
             header,
             border
         ]
-        
-        # 사용자 정보 추가
+
+        # Add user information
         for line in lines:
             if not line.strip():
                 continue
-                
+
             parts = line.split()
             if len(parts) >= 5:
                 user = parts[0][:user_width]
@@ -357,44 +359,44 @@ class SSHConnector:
                 from_loc = parts[2][:from_width]
                 login_time = ' '.join(parts[3:5])[:login_width]
                 what = ' '.join(parts[5:])[:what_width] if len(parts) > 5 else ''
-                
+
                 formatted_line = f"| {user:<{user_width}} | {tty:<{tty_width}} | {from_loc:<{from_width}} | {login_time:<{login_width}} | {what:<{what_width}} |"
                 formatted_output.append(formatted_line)
-        
+
         formatted_output.append(border)
-        return '\n'.join(formatted_output)   
-    
-    
+        return '\n'.join(formatted_output)
+
+
     def format_gpu_info(self, output: str, ssh_client: paramiko.SSHClient) -> str:
-        """nvidia-smi 출력을 파싱하여 정돈된 형식으로 변환"""
+        """Parses nvidia-smi output and formats it neatly"""
         try:
             lines = output.split('\n')
             gpus = []
             in_process_section = False
-            
-            # GPU 기본 정보 파싱
+
+            # Parse basic GPU information
             for i, line in enumerate(lines):
                 if '|   ' in line and 'NVIDIA' in line:
                     try:
                         parts = [p.strip() for p in line.split('|')]
                         gpu_info = parts[1].strip().split()
                         gpu_id = gpu_info[0]
-                        
-                        # 다음 줄의 성능 정보
+
+                        # Performance information from the next line
                         next_line = lines[i + 1]
                         perf_parts = [p.strip() for p in next_line.split('|')]
-                        
-                        # 온도, 전력 정보
+
+                        # Temperature, power information
                         temp_parts = perf_parts[1].split()
                         temp = temp_parts[1].replace('C', '')
                         power = temp_parts[4] if len(temp_parts) > 4 else 'N/A'
-                        
-                        # 메모리, 사용률 정보
+
+                        # Memory, utilization information
                         util_parts = perf_parts[2].split()
                         memory_used = util_parts[0]
                         memory_total = util_parts[2]
                         utilization = util_parts[-2] if len(util_parts) > 2 else 'N/A'
-                        
+
                         gpu = {
                             'id': gpu_id,
                             'name': 'TITAN RTX',
@@ -406,12 +408,12 @@ class SSHConnector:
                             'processes': []
                         }
                         gpus.append(gpu)
-                        
+
                     except Exception as e:
-                        print(f"GPU 정보 파싱 오류: {str(e)}")
+                        print(f"GPU info parsing error: {str(e)}")
                         continue
 
-            # 프로세스 정보 파싱
+            # Parse process information
             process_lines = []
             for i, line in enumerate(lines):
                 if '| Processes:' in line:
@@ -423,108 +425,125 @@ class SSHConnector:
                     if line.strip() != '|':
                         process_lines.append(line)
 
-            # 프로세스 정보 처리
+            # Process process information
             for line in process_lines:
                 try:
                     parts = line.strip().split('|')
                     if len(parts) < 2:
                         continue
-                    
+
                     process_parts = parts[1].strip().split()
-                    if len(process_parts) >= 5:  # GPU ID, PID, Type, Process name, Memory 정보가 있는지 확인
+                    if len(process_parts) >= 5:  # Check if GPU ID, PID, Type, Process name, Memory info exist
                         gpu_id = process_parts[0]
                         pid = process_parts[3]
                         memory = process_parts[-1]
-                        
-                        # ps 명령어로 상세 정보 얻기
+
+                        # Get detailed info using ps command
                         try:
-                            stdin, stdout, stderr = ssh_client.exec_command(f'ps -f {pid}')
+                            stdin, stdout, stderr = ssh_client.exec_command(f'ps -f --no-headers -o user,pid,start_time,command -p {pid}') # Modified ps command to use 'start_time'
                             ps_output = stdout.read().decode()
                             ps_lines = ps_output.strip().split('\n')
-                            
-                            if len(ps_lines) > 1:  # 헤더 제외
-                                ps_info = ps_lines[1].split()
+
+                            if len(ps_lines) > 0:
+                                ps_info = ps_lines[0].split() # Removed [1] index because of --no-headers
                                 username = ps_info[0]
-                                start_time = ps_info[4]
-                                command = ' '.join(ps_info[7:])
-                                
-                                # GPU에 프로세스 정보 추가
+                                pid_ps = ps_info[1] # PID from ps command, should match nvidia-smi PID
+                                start_time_str = ps_info[2] # Start time is now in YYYY format, using 'start_time' instead of 'lstart'
+
+                                command = ' '.join(ps_info[3:])
+
+                                # GPU start time is YYYY, try to get full start time using `lstart` if 'start_time' is just year
+                                if len(start_time_str) == 4 and start_time_str.isdigit():
+                                    stdin_lstart, stdout_lstart, stderr_lstart = ssh_client.exec_command(f'ps -f --no-headers -o lstart -p {pid}')
+                                    lstart_output = stdout_lstart.read().decode().strip()
+                                    if lstart_output:
+                                        start_time_str = lstart_output # Use lstart if available for full time
+                                    else:
+                                        start_time_str = f"Year {start_time_str}" # Indicate year only if lstart fails
+
+
+                                # Add process info to GPU
                                 for gpu in gpus:
                                     if gpu['id'] == gpu_id:
                                         gpu['processes'].append({
-                                            'pid': pid,
+                                            'pid': pid_ps, # Use PID from ps command for consistency
                                             'memory': memory,
                                             'user': username,
-                                            'start_time': start_time,
+                                            'start_time': start_time_str, # Full start time string or Year
                                             'command': command
                                         })
                         except Exception as e:
-                            print(f"프로세스 상세 정보 조회 실패 (PID: {pid}): {str(e)}")
+                            print(f"Failed to retrieve process details (PID: {pid}): {str(e)}")
                             continue
-                            
+
                 except Exception as e:
-                    print(f"프로세스 라인 파싱 오류: {str(e)}")
+                    print(f"Process line parsing error: {str(e)}")
                     continue
 
-            # 결과 포맷팅
+            # Format result
             result = []
-            header = f"+{'-' * 100}+"
+            header = f"+{'-' * 120}+"  # Increased width
             result.append(header)
-            result.append(f"| {'GPU 상태 정보':^98} |")
+            result.append(f"| {'GPU Status Information':^118} |") # Increased width
             result.append(header)
-            
+
             for gpu in gpus:
-                # GPU 기본 정보
+                # GPU basic information
                 result.append(f"| GPU {gpu['id']} | {gpu['name']} |")
                 result.append(
-                    f"| 온도: {gpu['temp']}°C | "
-                    f"전력: {gpu['power']} | "
-                    f"메모리: {gpu['memory_used']}/{gpu['memory_total']} | "
-                    f"사용률: {gpu['utilization']} |"
+                    f"| Temperature: {gpu['temp']}°C | "
+                    f"Power: {gpu['power']} | "
+                    f"Memory: {gpu['memory_used']}/{gpu['memory_total']} | "
+                    f"Utilization: {gpu['utilization']} |"
                 )
-                result.append(f"|{'-' * 98}|")
-                
-                # 프로세스 정보
+                result.append(f"|{'-' * 120}|") # Increased width
+
+                # Process information
                 if gpu['processes']:
-                    result.append(f"| {'사용자':^15} | {'PID':^8} | {'시작시간':^10} | {'메모리':^12} | {'명령어':^45} |")
-                    result.append(f"|{'-' * 98}|")
+                    result.append(f"| {'User(PID)':^20} | {'Start Time':^20} | {'Memory':^12} | {'Process':^63} |") # Combined User(PID), Increased Process width, Wider Start Time
+                    result.append(f"|{'-' * 120}|") # Increased width
                     for proc in gpu['processes']:
                         command = proc['command']
-                        if len(command) > 45:
-                            command = command[:42] + "..."
+                        if len(command) > 63: # Increased Process width
+                            command = command[:60] + "..." # Increased Process width
+                        user_pid = f"{proc['user']}({proc['pid']})" # Combined User and PID
                         result.append(
-                            f"| {proc['user']:<15} | {proc['pid']:^8} | {proc['start_time']:^10} | "
-                            f"{proc['memory']:>12} | {command:<45} |"
+                            f"| {user_pid:<20} | {proc['start_time']:<20} | " # Combined User(PID), Wider Start Time
+                            f"{proc['memory']:>12} | {command:<63} |" # Increased Process width
                         )
                 else:
-                    result.append(f"| {'현재 실행 중인 프로세스 없음':^98} |")
+                    result.append(f"| {'No running processes':^118} |") # Increased width
                 result.append(header)
-            
+
             return '\n'.join(result)
-            
+
         except Exception as e:
-            return f"GPU 정보 파싱 중 오류 발생: {str(e)}\n원본 출력:\n{output}"
+            return f"Error parsing GPU information: {str(e)}\nOriginal output:\n{output}"
 
     def update_gpu_status(self, server: Dict):
         try:
-            # 로딩 중 메시지 표시
+            # Display loading message with progress bar
+            progress_bar = ft.ProgressBar(width=400, value=None) # Indeterminate progress bar
             loading_content = ft.Column(
                 controls=[
-                    ft.Text("서버 정보 로딩 중...", size=20, weight=ft.FontWeight.BOLD),
-                    ft.Text("정보 업데이트 중입니다. 잠시만 기다려주세요.", 
-                        size=14, color=ft.colors.GREY_600),
+                    ft.Text(f"Checking GPU Status for {server['name']}...", size=20, weight=ft.FontWeight.BOLD),
+                    ft.Text("Please wait while fetching GPU information.",
+                        size=14, color=ft.Colors.GREY_600),
+                    ft.Container(height=20),
+                    progress_bar,
                 ],
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER
             )
             self.gpu_status_container.content = loading_content
             self.page.update()
 
-            # SSH 연결 및 GPU 정보 얻기
+            # SSH connection and get GPU info
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            
+
             username = self.username_field.value or self.config["credentials"]["default_username"]
             password = self.password_field.value or self.config["credentials"]["default_password"]
-            
+
             try:
                 ssh.connect(server["ip"], username=username, key_filename=os.path.expanduser('~/.ssh/id_rsa'))
             except Exception:
@@ -533,7 +552,7 @@ class SSHConnector:
             stdin, stdout, stderr = ssh.exec_command('nvidia-smi')
             gpu_output = stdout.read().decode()
 
-            # GPU 정보 파싱
+            # GPU info parsing
             gpus = self.parse_gpu_info(gpu_output, ssh)
 
             # UI 구성
@@ -541,108 +560,188 @@ class SSHConnector:
                 controls=[
                     ft.Row(
                         controls=[
-                            ft.Text(f"{server['name']} 상태", size=20, weight=ft.FontWeight.BOLD),
+                            ft.Text(f"{server['name']} Status", size=20, weight=ft.FontWeight.BOLD),
                             ft.Container(width=20),
-                            ft.Text(f"마지막 업데이트: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", 
-                                size=14, color=ft.colors.GREY_600),
+                            ft.Text(f"Last Updated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+                                size=14, color=ft.Colors.GREY_600),
                         ],
                     ),
-                    ft.Divider(height=1, color=ft.colors.GREY_300),
+                    ft.Divider(height=1, color=ft.Colors.GREY_300),
                 ],
                 scroll=ft.ScrollMode.AUTO,
                 spacing=20,
             )
 
-            # 각 GPU별 정보 표시
-            for gpu in gpus:
-                # GPU 기본 정보
-                gpu_info = ft.Container(
-                    content=ft.Column([
-                        ft.Row([
-                            ft.Icon(
-                                ft.icons.MEMORY,
-                                color=self.get_temperature_color(float(gpu['temp'])),
-                                size=24
+            # Logic to arrange GPU cards in 2 columns
+            gpu_rows = []
+            for i in range(0, len(gpus), 2):
+                row_gpus = gpus[i:i+2]
+                gpu_cards = []
+
+                for gpu in row_gpus:
+                    # GPU basic information card
+                    gpu_info = ft.Container(
+                        content=ft.Column([
+                            ft.Row([
+                                ft.Icon(
+                                    ft.Icons.MEMORY,
+                                    color=self.get_temperature_color(float(gpu['temp'])),
+                                    size=24
+                                ),
+                                ft.Text(
+                                    f"GPU {gpu['id']} | {gpu['name']}",
+                                    size=16,
+                                    weight=ft.FontWeight.BOLD
+                                ),
+                            ]),
+                            ft.Text(
+                                f"Temperature: {gpu['temp']}°C | Power: {gpu['power']}",
+                                size=12,
                             ),
                             ft.Text(
-                                f"GPU {gpu['id']} | {gpu['name']}", 
-                                size=16, 
-                                weight=ft.FontWeight.BOLD
+                                f"Memory: {gpu['memory_used']}/{gpu['memory_total']}",
+                                size=12,
+                            ),
+                            ft.Text(
+                                f"Utilization: {gpu['utilization']}",
+                                size=12,
                             ),
                         ]),
-                        ft.Text(
-                            f"온도: {gpu['temp']}°C | 전력: {gpu['power']} | "
-                            f"메모리: {gpu['memory_used']}/{gpu['memory_total']} | "
-                            f"사용률: {gpu['utilization']}"
-                        ),
-                    ]),
-                    padding=10,
-                    bgcolor=ft.colors.BLUE_50,
-                    border_radius=10,
-                )
-                
-                # 프로세스 정보 테이블
-                process_table = None
-                if gpu['processes']:
-                    process_table = ft.DataTable(
-                        columns=[
-                            ft.DataColumn(ft.Text("사용자")),
-                            ft.DataColumn(ft.Text("PID")),
-                            ft.DataColumn(ft.Text("시작 시간")),
-                            ft.DataColumn(ft.Text("메모리")),
-                            ft.DataColumn(ft.Text("명령어")),
-                        ],
-                        rows=[
-                            ft.DataRow(
-                                cells=[
-                                    ft.DataCell(ft.Text(proc['user'])),
-                                    ft.DataCell(ft.Text(proc['pid'])),
-                                    ft.DataCell(ft.Text(proc['start_time'])),
-                                    ft.DataCell(ft.Text(proc['memory'])),
-                                    ft.DataCell(ft.Text(
-                                        proc['command'][:45] + "..." if len(proc['command']) > 45 else proc['command']
-                                    )),
-                                ],
-                            )
-                            for proc in gpu['processes']
-                        ],
-                    )
-                else:
-                    process_table = ft.Container(
-                        content=ft.Text(
-                            "실행 중인 프로세스 없음",
-                            color=ft.colors.GREY_600,
-                            italic=True,
-                            size=14,
-                        ),
                         padding=10,
+                        bgcolor=ft.Colors.BLUE_50,
+                        border_radius=10,
                     )
 
-                # GPU 카드 생성
-                gpu_card = ft.Card(
-                    content=ft.Container(
-                        content=ft.Column([
-                            gpu_info,
-                            ft.Divider(height=1, color=ft.colors.GREY_300),
-                            process_table,
-                        ]),
-                        padding=10,
-                    ),
+                    # Process information section
+                    process_column = ft.Column(controls=[], spacing=5)
+
+                    if gpu['processes']:
+                        # Create header row for process info
+                        header_row = ft.Row(
+                            controls=[
+                                ft.Text("User(PID)", size=12, width=120),
+                                ft.Text("Start Time", size=12, width=120),
+                                ft.Text("Memory", size=12, width=80),
+                            ],
+                            alignment=ft.MainAxisAlignment.START,
+                        )
+                        process_column.controls.append(header_row)
+
+                        # Add basic process info rows (always visible)
+                        for proc in gpu['processes']:
+                            user_pid_display = f"{proc['user']}({proc['pid']})"
+                            basic_info_row = ft.Row(
+                                controls=[
+                                    ft.Text(user_pid_display, size=12, width=120),
+                                    ft.Text(proc['start_time'], size=12, width=120),
+                                    ft.Text(proc['memory'], size=12, width=80),
+                                ],
+                                alignment=ft.MainAxisAlignment.START,
+                            )
+                            process_column.controls.append(basic_info_row)
+
+                        # Add show details button and process commands (initially hidden)
+                        show_details_button = ft.ElevatedButton(
+                            "Show Process Details",
+                            on_click=lambda e, processes=gpu['processes']: self.toggle_process_details(e, processes),
+                        )
+                        process_column.controls.append(show_details_button)
+
+                        # Container for process commands (initially hidden)
+                        process_details = ft.Column(
+                            controls=[],
+                            visible=False,
+                        )
+
+                        # Add process command information with full text
+                        for proc in gpu['processes']:
+                            command = proc['command']
+                            # Create a container for the command with tooltip
+                            command_container = ft.Container(
+                                content=ft.Column([
+                                    ft.Text(
+                                        "Process:",
+                                        size=12,
+                                        color=ft.colors.GREY_700,
+                                        weight=ft.FontWeight.BOLD
+                                    ),
+                                    ft.Text(
+                                        command,
+                                        size=12,
+                                        color=ft.colors.GREY_700,
+                                        width=350,
+                                        selectable=True,  # Makes text selectable
+                                        tooltip=command,  # Shows full text on hover
+                                        text_align=ft.TextAlign.LEFT,
+                                        no_wrap=False,   # Enables text wrapping
+                                    )
+                                ]),
+                                padding=ft.padding.only(left=10, top=5, bottom=5),
+                            )
+                            process_details.controls.append(command_container)
+
+                        process_column.controls.append(process_details)
+                    else:
+                        process_column.controls.append(
+                            ft.Text(
+                                "No running processes",
+                                color=ft.Colors.GREY_600,
+                                italic=True,
+                                size=12,
+                            )
+                        )
+
+                    # GPU card creation
+                    gpu_card = ft.Card(
+                        content=ft.Container(
+                            content=ft.Column([
+                                gpu_info,
+                                ft.Divider(height=1, color=ft.Colors.GREY_300),
+                                process_column,
+                            ]),
+                            padding=10,
+                            width=380,
+                        ),
+                    )
+                    gpu_cards.append(gpu_card)
+
+                # Add GPU cards to Row
+                gpu_row = ft.Row(
+                    controls=gpu_cards,
+                    alignment=ft.MainAxisAlignment.START,
+                    spacing=20,
                 )
-                content_column.controls.append(gpu_card)
+                gpu_rows.append(gpu_row)
+
+            # Add all GPU rows to content_column
+            for row in gpu_rows:
+                content_column.controls.append(row)
 
             self.gpu_status_container.content = content_column
             self.page.update()
 
             ssh.close()
-            
+
         except Exception as e:
-            self.show_error(f"상태 확인 실패: {str(e)}")
+            self.show_error(f"Status check failed: {str(e)}")
             if 'ssh' in locals():
                 ssh.close()
 
+
+    def toggle_process_details(self, e, processes):
+        """Toggle visibility of process command details"""
+        button = e.control
+        details_container = button.parent.controls[-1]  # Get the process details container
+        is_visible = not details_container.visible
+        
+        details_container.visible = is_visible
+        button.text = "Hide Process Details" if is_visible else "Show Process Details"
+        self.page.update()
+
+
+
     def get_temperature_color(self, temp: float) -> str:
-        """GPU 온도에 따른 색상 반환"""
+        """Returns color based on GPU temperature"""
         if temp >= 80:
             return ft.colors.RED
         elif temp >= 70:
@@ -653,31 +752,31 @@ class SSHConnector:
             return ft.colors.GREEN
 
     def parse_gpu_info(self, output: str, ssh_client: paramiko.SSHClient) -> list:
-        """nvidia-smi 출력을 파싱하여 GPU 정보 반환"""
+        """Parses nvidia-smi output and returns GPU information"""
         lines = output.split('\n')
         gpus = []
         in_process_section = False
-        
-        # GPU 기본 정보 파싱
+
+        # GPU basic information parsing
         for i, line in enumerate(lines):
             if '|   ' in line and 'NVIDIA' in line:
                 try:
                     parts = [p.strip() for p in line.split('|')]
                     gpu_info = parts[1].strip().split()
                     gpu_id = gpu_info[0]
-                    
+
                     next_line = lines[i + 1]
                     perf_parts = [p.strip() for p in next_line.split('|')]
-                    
+
                     temp_parts = perf_parts[1].split()
                     temp = temp_parts[1].replace('C', '')
                     power = temp_parts[4] if len(temp_parts) > 4 else 'N/A'
-                    
+
                     util_parts = perf_parts[2].split()
                     memory_used = util_parts[0]
                     memory_total = util_parts[2]
                     utilization = util_parts[-2] if len(util_parts) > 2 else 'N/A'
-                    
+
                     gpu = {
                         'id': gpu_id,
                         'name': 'TITAN RTX',
@@ -689,12 +788,12 @@ class SSHConnector:
                         'processes': []
                     }
                     gpus.append(gpu)
-                    
+
                 except Exception as e:
-                    print(f"GPU 정보 파싱 오류: {str(e)}")
+                    print(f"GPU info parsing error: {str(e)}")
                     continue
 
-        # 프로세스 정보 파싱
+        # Process information parsing
         process_lines = []
         for i, line in enumerate(lines):
             if '| Processes:' in line:
@@ -706,55 +805,67 @@ class SSHConnector:
                 if line.strip() != '|':
                     process_lines.append(line)
 
-        # 프로세스 정보 처리
+        # Process process information
         for line in process_lines:
             try:
                 parts = line.strip().split('|')
                 if len(parts) < 2:
                     continue
-                
+
                 process_parts = parts[1].strip().split()
                 if len(process_parts) >= 5:
                     gpu_id = process_parts[0]
                     pid = process_parts[3]
                     memory = process_parts[-1]
-                    
+
                     try:
-                        stdin, stdout, stderr = ssh_client.exec_command(f'ps -f {pid}')
+                        stdin, stdout, stderr = ssh_client.exec_command(f'ps -f --no-headers -o user,pid,start_time,command -p {pid}') # Modified ps command to use 'start_time'
                         ps_output = stdout.read().decode()
                         ps_lines = ps_output.strip().split('\n')
-                        
-                        if len(ps_lines) > 1:
-                            ps_info = ps_lines[1].split()
+
+                        if len(ps_lines) > 0:
+                            ps_info = ps_lines[0].split() # Removed [1] index because of --no-headers
                             username = ps_info[0]
-                            start_time = ps_info[4]
-                            command = ' '.join(ps_info[7:])
-                            
+                            pid_ps = ps_info[1] # PID from ps command
+                            start_time_str = ps_info[2] # Start time is now in YYYY format, using 'start_time' instead of 'lstart'
+
+                            command = ' '.join(ps_info[3:])
+
+                            # GPU start time is YYYY, try to get full start time using `lstart` if 'start_time' is just year
+                            if len(start_time_str) == 4 and start_time_str.isdigit():
+                                stdin_lstart, stdout_lstart, stderr_lstart = ssh_client.exec_command(f'ps -f --no-headers -o lstart -p {pid}')
+                                lstart_output = stdout_lstart.read().decode().strip()
+                                if lstart_output:
+                                    start_time_str = lstart_output # Use lstart if available for full time
+                                else:
+                                    start_time_str = f"Year {start_time_str}" # Indicate year only if lstart fails
+
+
                             for gpu in gpus:
                                 if gpu['id'] == gpu_id:
                                     gpu['processes'].append({
-                                        'pid': pid,
+                                        'pid': pid_ps, # Use PID from ps command for consistency
                                         'memory': memory,
                                         'user': username,
-                                        'start_time': start_time,
+                                        'start_time': start_time_str, # Full start time string or Year
                                         'command': command
                                     })
                     except Exception as e:
-                        print(f"프로세스 상세 정보 조회 실패 (PID: {pid}): {str(e)}")
+                        print(f"Failed to retrieve process details (PID: {pid}): {str(e)}")
                         continue
-                        
+
             except Exception as e:
-                print(f"프로세스 라인 파싱 오류: {str(e)}")
+                print(f"Process line parsing error: {str(e)}")
                 continue
-        
+
         return gpus
 
     def highlight_process_info(self, output: str) -> str:
-        # 프로세스 정보에 빨간색 하이라이트 추가
-        # 예시: GPU 프로세스 목록을 빨간색으로 하이라이트 처리
+        # Add red highlight to process information
+        # Example: Highlight GPU process list in red
         highlighted = output.replace("Processes", "<span style='color:red;'>Processes</span>")
-        # 여기서 "Processes" 부분을 예시로 빨간색으로 표시했습니다.
-        # 실제 GPU 프로세스 정보에 맞는 부분을 찾아서 해당 부분을 스타일링해야 합니다.
+        # Here, "Processes" part is shown as red as an example.
+        # You need to find the part corresponding to actual GPU process info and style that part.
         return highlighted
 
     def connect_to_server(self, server: Dict):
@@ -762,26 +873,26 @@ class SSHConnector:
         password = self.password_field.value or self.config["credentials"]["default_password"]
 
         try:
-            # SSH 연결 설정
+            # SSH connection settings
             ssh = paramiko.SSHClient()
             ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            
-            # SSH 연결 시도 중임을 표시
-            self.show_snackbar(f"{server['name']}에 연결 중...")
-            
-            # SSH 키 경로
+
+            # Display SSH connection attempt
+            self.show_snackbar(f"Connecting to {server['name']}...")
+
+            # SSH key path
             ssh_key_path = os.path.expanduser('~/.ssh/id_rsa')
-            
-            # SSH 연결 시도 (먼저 키 인증 시도, 실패시 비밀번호 사용)
+
+            # Attempt SSH connection (try key authentication first, then password if failed)
             try:
                 ssh.connect(server["ip"], username=username, key_filename=ssh_key_path)
             except Exception as key_error:
                 ssh.connect(server["ip"], username=username, password=password)
-            
-            # 1111 명령어 실행
+
+            # Execute 1111 command
             stdin, stdout, stderr = ssh.exec_command("1111")
-            
-            # VS Code 경로 찾기
+
+            # Find VS Code path
             vscode_paths = [
                 # Windows paths
                 r"C:\Program Files\Microsoft VS Code\Code.exe",
@@ -789,13 +900,13 @@ class SSHConnector:
                 # Mac path
                 "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code"
             ]
-            
+
             vscode_path = None
             for path in vscode_paths:
                 if os.path.exists(path):
                     vscode_path = path
                     break
-                    
+
             if vscode_path:
                 subprocess.Popen([
                     vscode_path,
@@ -803,29 +914,29 @@ class SSHConnector:
                     f"ssh-remote+{username}@{server['ip']}",
                     f"/home/{username}"
                 ])
-                self.show_snackbar(f"{server['name']}에 성공적으로 연결되었습니다!", color="green")
+                self.show_snackbar(f"Successfully connected to {server['name']}!", color="green")
             else:
-                self.show_error("VS Code가 설치되어 있지 않거나 기본 경로에서 찾을 수 없습니다.")
-            
+                self.show_error("VS Code is not installed or cannot be found in the default paths.")
+
             ssh.close()
-            
+
         except Exception as e:
-            self.show_error(f"연결 실패: {str(e)}")
+            self.show_error(f"Connection failed: {str(e)}")
 
     def show_error(self, message: str):
-        self.page.snack_bar = ft.SnackBar(  # show_snack_bar -> snack_bar로 변경
+        self.page.snack_bar = ft.SnackBar(
             content=ft.Text(message),
             bgcolor=ft.Colors.RED_400,
-            action="확인"
+            action="OK"
         )
         self.page.snack_bar.open = True
         self.page.update()
 
     def show_snackbar(self, message: str, color="blue"):
-        self.page.snack_bar = ft.SnackBar(  # show_snack_bar -> snack_bar로 변경
+        self.page.snack_bar = ft.SnackBar(
             content=ft.Text(message),
             bgcolor=ft.Colors.BLUE_400 if color == "blue" else ft.Colors.GREEN_400,
-            action="확인"
+            action="OK"
         )
         self.page.snack_bar.open = True
         self.page.update()
